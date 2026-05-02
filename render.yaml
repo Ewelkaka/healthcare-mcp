@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: healthcare-mcp
+    env: docker
+    plan: free
+    num_instances: 1
+    healthCheckPath: /
+    envVars:
+      - key: TRANSPORT
+        value: http
+      - key: PORT
+        value: 8080
