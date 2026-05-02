@@ -5,40 +5,140 @@ import express from "express"
 
 const PORT = parseInt(process.env.PORT ?? "8080")
 const app = express()
-
 app.use(express.json())
 
+// Store FHIR context per transport/session
+const sessionContexts = new Map<string, { fhirUrl: string, fhirToken?: string, patientId?: string }>()
+
 app.all("/mcp", async (req, res) => {
+  // Extract FHIR context from SHARP-on-MCP headers
+  const fhirUrl = req.headers["x-fhir-server-url"] as string
+  const fhirToken = req.headers["x-fhir-access-token"] as string
+  const patientId = req.headers["x-patient-id"] as string
+
+  if (!fhirUrl) {
+    res.status(400).json({
+      jsonrpc: "2.0",
+      error: { code: -32000, message: "Missing X-FHIR-Server-URL header" },
+      id: null
+    })
+    return
+  }
+
+  // Create transport with session
   const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: undefined
+    sessionIdGenerator: () => crypto.randomUUID(),
   })
+
+  // Store context for this session
+  const sessionId = transport.sessionId!
+  sessionContexts.set(sessionId, { fhirUrl, fhirToken, patientId })
 
   const server = new McpServer({
     name: "healthcare-mcp",
     version: "1.0.0",
   })
 
+  // Helper to fetch from FHIR
+  async function fetchFhir(resourceType: string, params?: Record<string, string>) {
+    const ctx = sessionContexts.get(sessionId)!
+    const url = new URL(`${ctx.fhirUrl}/${resourceType}`)
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
+    }
+    const headers: Record<string, string> = {}
+    if (ctx.fhirToken) headers["Authorization"] = `Bearer ${ctx.fhirToken}`
+    const response = await fetch(url.toString(), { headers })
+    if (!response.ok) throw new Error(`FHIR ${resourceType}: ${response.status}`)
+    return response.json()
+  }
+
+  // Register tools
   server.tool("get_patient_summary", "Get patient summary", {}, async () => {
-    return {
-      content: [{ type: "text", text: "Patient: John Doe, DOB: 1980-01-01, Conditions: Hypertension, Medications: Lisinopril" }],
+    const ctx = sessionContexts.get(sessionId)
+    if (!ctx?.patientId) return { content: [{ type: "text" as const, text: "No patient ID" }], isError: true }
+    
+    try {
+      const [patient, conditions, meds] = await Promise.all([
+        fetchFhir(`Patient/${ctx.patientId}`),
+        fetchFhir("Condition", { patient: ctx.patientId, "clinical-status": "active" }),
+        fetchFhir("MedicationRequest", { patient: ctx.patientId, status: "active" }),
+      ])
+
+      const name = patient.name?.[0]
+      const fullName = `${name?.given?.join(" ") ?? ""} ${name?.family ?? ""}`.trim()
+      
+      const condList = (conditions.entry ?? [])
+        .map((e: any) => e.resource.code?.text)
+        .filter(Boolean)
+        .join(", ") || "None"
+
+      const medList = (meds.entry ?? [])
+        .map((e: any) => e.resource.medicationCodeableConcept?.text)
+        .filter(Boolean)
+        .join(", ") || "None"
+
+      return {
+        content: [{ type: "text" as const, text: [
+          `Patient: ${fullName || ctx.patientId}`,
+          `DOB: ${patient.birthDate ?? "unknown"}, Gender: ${patient.gender ?? "unknown"}`,
+          `Active Conditions: ${condList}`,
+          `Active Medications: ${medList}`,
+        ].join("\n") }],
+      }
+    } catch (error: any) {
+      return { content: [{ type: "text" as const, text: `FHIR error: ${error.message}` }], isError: true }
     }
   })
 
   server.tool("get_medications", "Get medications", {}, async () => {
-    return {
-      content: [{ type: "text", text: "Medications: Lisinopril 10mg daily, Metformin 500mg twice daily" }],
+    const ctx = sessionContexts.get(sessionId)
+    if (!ctx?.patientId) return { content: [{ type: "text" as const, text: "No patient ID" }], isError: true }
+    
+    try {
+      const meds = await fetchFhir("MedicationRequest", { patient: ctx.patientId, status: "active" })
+      const list = (meds.entry ?? [])
+        .map((e: any) => `- ${e.resource.medicationCodeableConcept?.text ?? e.resource.id}`)
+        .join("\n") || "No active medications"
+      return { content: [{ type: "text" as const, text: list }] }
+    } catch (error: any) {
+      return { content: [{ type: "text" as const, text: `FHIR error: ${error.message}` }], isError: true }
     }
   })
 
   server.tool("get_lab_results", "Get lab results", {}, async () => {
-    return {
-      content: [{ type: "text", text: "Recent labs: HbA1c 7.2%, Cholesterol 190 mg/dL, LDL 110 mg/dL" }],
+    const ctx = sessionContexts.get(sessionId)
+    if (!ctx?.patientId) return { content: [{ type: "text" as const, text: "No patient ID" }], isError: true }
+    
+    try {
+      const obs = await fetchFhir("Observation", { patient: ctx.patientId, category: "laboratory", _count: "20" })
+      const list = (obs.entry ?? [])
+        .map((e: any) => {
+          const val = e.resource.valueQuantity ? `${e.resource.valueQuantity.value} ${e.resource.valueQuantity.unit ?? ""}` : ""
+          return `- ${e.resource.code?.text ?? "Unknown"}: ${val}`
+        })
+        .join("\n") || "No lab results"
+      return { content: [{ type: "text" as const, text: list }] }
+    } catch (error: any) {
+      return { content: [{ type: "text" as const, text: `FHIR error: ${error.message}` }], isError: true }
     }
   })
 
   server.tool("get_conditions", "Get conditions", {}, async () => {
-    return {
-      content: [{ type: "text", text: "Active conditions: Hypertension (essential), Type 2 Diabetes, Hyperlipidemia" }],
+    const ctx = sessionContexts.get(sessionId)
+    if (!ctx?.patientId) return { content: [{ type: "text" as const, text: "No patient ID" }], isError: true }
+    
+    try {
+      const conds = await fetchFhir("Condition", { patient: ctx.patientId })
+      const list = (conds.entry ?? [])
+        .map((e: any) => {
+          const status = e.resource.clinicalStatus?.coding?.[0]?.code ?? ""
+          return `- ${e.resource.code?.text ?? "Unknown"} [${status}]`
+        })
+        .join("\n") || "No conditions"
+      return { content: [{ type: "text" as const, text: list }] }
+    } catch (error: any) {
+      return { content: [{ type: "text" as const, text: `FHIR error: ${error.message}` }], isError: true }
     }
   })
 
