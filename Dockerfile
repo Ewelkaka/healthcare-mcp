@@ -2,11 +2,10 @@ FROM oven/bun:latest
 
 WORKDIR /app
 
-COPY . .
+COPY package.json bun.lock ./
+RUN bun install --production
 
-RUN bun install
-
-RUN bun build src/server.ts --outdir dist --target bun
+COPY dist/ ./dist/
 
 EXPOSE 8080
 
