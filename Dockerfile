@@ -5,7 +5,9 @@ WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --production
 
-COPY dist/ ./dist/
+COPY . .
+
+RUN bun build src/server.ts --outdir dist --target bun
 
 EXPOSE 8080
 
