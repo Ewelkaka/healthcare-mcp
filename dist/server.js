@@ -43752,77 +43752,11 @@ class StreamableHTTPServerTransport {
   }
 }
 
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/express.js
-var import_express = __toESM(require_express(), 1);
-
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/middleware/hostHeaderValidation.js
-function hostHeaderValidation(allowedHostnames) {
-  return (req, res, next) => {
-    const hostHeader = req.headers.host;
-    if (!hostHeader) {
-      res.status(403).json({
-        jsonrpc: "2.0",
-        error: {
-          code: -32000,
-          message: "Missing Host header"
-        },
-        id: null
-      });
-      return;
-    }
-    let hostname2;
-    try {
-      hostname2 = new URL(`http://${hostHeader}`).hostname;
-    } catch {
-      res.status(403).json({
-        jsonrpc: "2.0",
-        error: {
-          code: -32000,
-          message: `Invalid Host header: ${hostHeader}`
-        },
-        id: null
-      });
-      return;
-    }
-    if (!allowedHostnames.includes(hostname2)) {
-      res.status(403).json({
-        jsonrpc: "2.0",
-        error: {
-          code: -32000,
-          message: `Invalid Host: ${hostname2}`
-        },
-        id: null
-      });
-      return;
-    }
-    next();
-  };
-}
-function localhostHostValidation() {
-  return hostHeaderValidation(["localhost", "127.0.0.1", "[::1]"]);
-}
-
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/express.js
-function createMcpExpressApp(options = {}) {
-  const { host = "127.0.0.1", allowedHosts } = options;
-  const app = import_express.default();
-  app.use(import_express.default.json());
-  if (allowedHosts) {
-    app.use(hostHeaderValidation(allowedHosts));
-  } else {
-    const localhostHosts = ["127.0.0.1", "localhost", "::1"];
-    if (localhostHosts.includes(host)) {
-      app.use(localhostHostValidation());
-    } else if (host === "0.0.0.0" || host === "::") {
-      console.warn(`Warning: Server is binding to ${host} without DNS rebinding protection. ` + "Consider using the allowedHosts option to restrict allowed hosts, " + "or use authentication to protect your server.");
-    }
-  }
-  return app;
-}
-
 // src/server.ts
+var import_express = __toESM(require_express(), 1);
 var PORT = parseInt(process.env.PORT ?? "8080");
-var app = createMcpExpressApp();
+var app = import_express.default();
+app.use(import_express.default.json());
 app.all("/mcp", async (req, res) => {
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined
@@ -43834,6 +43768,21 @@ app.all("/mcp", async (req, res) => {
   server.tool("get_patient_summary", "Get patient summary", {}, async () => {
     return {
       content: [{ type: "text", text: "Patient: John Doe, DOB: 1980-01-01, Conditions: Hypertension, Medications: Lisinopril" }]
+    };
+  });
+  server.tool("get_medications", "Get medications", {}, async () => {
+    return {
+      content: [{ type: "text", text: "Medications: Lisinopril 10mg daily, Metformin 500mg twice daily" }]
+    };
+  });
+  server.tool("get_lab_results", "Get lab results", {}, async () => {
+    return {
+      content: [{ type: "text", text: "Recent labs: HbA1c 7.2%, Cholesterol 190 mg/dL, LDL 110 mg/dL" }]
+    };
+  });
+  server.tool("get_conditions", "Get conditions", {}, async () => {
+    return {
+      content: [{ type: "text", text: "Active conditions: Hypertension (essential), Type 2 Diabetes, Hyperlipidemia" }]
     };
   });
   await server.connect(transport);

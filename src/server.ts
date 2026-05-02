@@ -1,15 +1,16 @@
 #!/usr/bin/env bun
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
-import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js"
-import { randomUUID } from "node:crypto"
+import express from "express"
 
 const PORT = parseInt(process.env.PORT ?? "8080")
-const app = createMcpExpressApp()
+const app = express()
+
+app.use(express.json())
 
 app.all("/mcp", async (req, res) => {
   const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: undefined, // stateless
+    sessionIdGenerator: undefined
   })
 
   const server = new McpServer({
@@ -20,6 +21,24 @@ app.all("/mcp", async (req, res) => {
   server.tool("get_patient_summary", "Get patient summary", {}, async () => {
     return {
       content: [{ type: "text", text: "Patient: John Doe, DOB: 1980-01-01, Conditions: Hypertension, Medications: Lisinopril" }],
+    }
+  })
+
+  server.tool("get_medications", "Get medications", {}, async () => {
+    return {
+      content: [{ type: "text", text: "Medications: Lisinopril 10mg daily, Metformin 500mg twice daily" }],
+    }
+  })
+
+  server.tool("get_lab_results", "Get lab results", {}, async () => {
+    return {
+      content: [{ type: "text", text: "Recent labs: HbA1c 7.2%, Cholesterol 190 mg/dL, LDL 110 mg/dL" }],
+    }
+  })
+
+  server.tool("get_conditions", "Get conditions", {}, async () => {
+    return {
+      content: [{ type: "text", text: "Active conditions: Hypertension (essential), Type 2 Diabetes, Hyperlipidemia" }],
     }
   })
 
