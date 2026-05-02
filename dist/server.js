@@ -1474,37 +1474,37 @@ var require_dataType = __commonJS((exports) => {
     DataType2[DataType2["Wrong"] = 1] = "Wrong";
   })(DataType || (exports.DataType = DataType = {}));
   function getSchemaTypes(schema) {
-    const types2 = getJSONTypes(schema.type);
-    const hasNull = types2.includes("null");
+    const types = getJSONTypes(schema.type);
+    const hasNull = types.includes("null");
     if (hasNull) {
       if (schema.nullable === false)
         throw new Error("type: null contradicts nullable: false");
     } else {
-      if (!types2.length && schema.nullable !== undefined) {
+      if (!types.length && schema.nullable !== undefined) {
         throw new Error('"nullable" cannot be used without "type"');
       }
       if (schema.nullable === true)
-        types2.push("null");
+        types.push("null");
     }
-    return types2;
+    return types;
   }
   exports.getSchemaTypes = getSchemaTypes;
   function getJSONTypes(ts) {
-    const types2 = Array.isArray(ts) ? ts : ts ? [ts] : [];
-    if (types2.every(rules_1.isJSONType))
-      return types2;
-    throw new Error("type must be JSONType or JSONType[]: " + types2.join(","));
+    const types = Array.isArray(ts) ? ts : ts ? [ts] : [];
+    if (types.every(rules_1.isJSONType))
+      return types;
+    throw new Error("type must be JSONType or JSONType[]: " + types.join(","));
   }
   exports.getJSONTypes = getJSONTypes;
-  function coerceAndCheckDataType(it, types2) {
+  function coerceAndCheckDataType(it, types) {
     const { gen, data, opts } = it;
-    const coerceTo = coerceToTypes(types2, opts.coerceTypes);
-    const checkTypes = types2.length > 0 && !(coerceTo.length === 0 && types2.length === 1 && (0, applicability_1.schemaHasRulesForType)(it, types2[0]));
+    const coerceTo = coerceToTypes(types, opts.coerceTypes);
+    const checkTypes = types.length > 0 && !(coerceTo.length === 0 && types.length === 1 && (0, applicability_1.schemaHasRulesForType)(it, types[0]));
     if (checkTypes) {
-      const wrongType = checkDataTypes(types2, data, opts.strictNumbers, DataType.Wrong);
+      const wrongType = checkDataTypes(types, data, opts.strictNumbers, DataType.Wrong);
       gen.if(wrongType, () => {
         if (coerceTo.length)
-          coerceData(it, types2, coerceTo);
+          coerceData(it, types, coerceTo);
         else
           reportTypeError(it);
       });
@@ -1513,15 +1513,15 @@ var require_dataType = __commonJS((exports) => {
   }
   exports.coerceAndCheckDataType = coerceAndCheckDataType;
   var COERCIBLE = new Set(["string", "number", "integer", "boolean", "null"]);
-  function coerceToTypes(types2, coerceTypes) {
-    return coerceTypes ? types2.filter((t) => COERCIBLE.has(t) || coerceTypes === "array" && t === "array") : [];
+  function coerceToTypes(types, coerceTypes) {
+    return coerceTypes ? types.filter((t) => COERCIBLE.has(t) || coerceTypes === "array" && t === "array") : [];
   }
-  function coerceData(it, types2, coerceTo) {
+  function coerceData(it, types, coerceTo) {
     const { gen, data, opts } = it;
     const dataType = gen.let("dataType", (0, codegen_1._)`typeof ${data}`);
     const coerced = gen.let("coerced", (0, codegen_1._)`undefined`);
     if (opts.coerceTypes === "array") {
-      gen.if((0, codegen_1._)`${dataType} == 'object' && Array.isArray(${data}) && ${data}.length == 1`, () => gen.assign(data, (0, codegen_1._)`${data}[0]`).assign(dataType, (0, codegen_1._)`typeof ${data}`).if(checkDataTypes(types2, data, opts.strictNumbers), () => gen.assign(coerced, data)));
+      gen.if((0, codegen_1._)`${dataType} == 'object' && Array.isArray(${data}) && ${data}.length == 1`, () => gen.assign(data, (0, codegen_1._)`${data}[0]`).assign(dataType, (0, codegen_1._)`typeof ${data}`).if(checkDataTypes(types, data, opts.strictNumbers), () => gen.assign(coerced, data)));
     }
     gen.if((0, codegen_1._)`${coerced} !== undefined`);
     for (const t of coerceTo) {
@@ -1597,19 +1597,19 @@ var require_dataType = __commonJS((exports) => {
       return checkDataType(dataTypes[0], data, strictNums, correct);
     }
     let cond;
-    const types2 = (0, util_1.toHash)(dataTypes);
-    if (types2.array && types2.object) {
+    const types = (0, util_1.toHash)(dataTypes);
+    if (types.array && types.object) {
       const notObj = (0, codegen_1._)`typeof ${data} != "object"`;
-      cond = types2.null ? notObj : (0, codegen_1._)`!${data} || ${notObj}`;
-      delete types2.null;
-      delete types2.array;
-      delete types2.object;
+      cond = types.null ? notObj : (0, codegen_1._)`!${data} || ${notObj}`;
+      delete types.null;
+      delete types.array;
+      delete types.object;
     } else {
       cond = codegen_1.nil;
     }
-    if (types2.number)
-      delete types2.integer;
-    for (const t in types2)
+    if (types.number)
+      delete types.integer;
+    for (const t in types)
       cond = (0, codegen_1.and)(cond, checkDataType(t, data, strictNums, correct));
     return cond;
   }
@@ -1866,9 +1866,9 @@ var require_keyword = __commonJS((exports) => {
       const passSchema = !(("compile" in def) && !$data || def.schema === false);
       gen.assign(valid, (0, codegen_1._)`${_await}${(0, code_1.callValidateCode)(cxt, validateRef, passCxt, passSchema)}`, def.modifying);
     }
-    function reportErrs(errors4) {
+    function reportErrs(errors3) {
       var _a2;
-      gen.if((0, codegen_1.not)((_a2 = def.valid) !== null && _a2 !== undefined ? _a2 : valid), errors4);
+      gen.if((0, codegen_1.not)((_a2 = def.valid) !== null && _a2 !== undefined ? _a2 : valid), errors3);
     }
   }
   exports.funcKeywordCode = funcKeywordCode;
@@ -2397,9 +2397,9 @@ var require_validate = __commonJS((exports) => {
   function typeAndKeywords(it, errsCount) {
     if (it.opts.jtd)
       return schemaKeywords(it, [], false, errsCount);
-    const types2 = (0, dataType_1.getSchemaTypes)(it.schema);
-    const checkedTypes = (0, dataType_1.coerceAndCheckDataType)(it, types2);
-    schemaKeywords(it, types2, !checkedTypes, errsCount);
+    const types = (0, dataType_1.getSchemaTypes)(it.schema);
+    const checkedTypes = (0, dataType_1.coerceAndCheckDataType)(it, types);
+    schemaKeywords(it, types, !checkedTypes, errsCount);
   }
   function checkRefsAndKeywords(it) {
     const { schema, errSchemaPath, opts, self } = it;
@@ -2449,7 +2449,7 @@ var require_validate = __commonJS((exports) => {
     if (items instanceof codegen_1.Name)
       gen.assign((0, codegen_1._)`${evaluated}.items`, items);
   }
-  function schemaKeywords(it, types2, typeErrors, errsCount) {
+  function schemaKeywords(it, types, typeErrors, errsCount) {
     const { gen, schema, data, allErrors, opts, self } = it;
     const { RULES } = self;
     if (schema.$ref && (opts.ignoreKeywordsWithRef || !(0, util_1.schemaHasRulesButRef)(schema, RULES))) {
@@ -2457,7 +2457,7 @@ var require_validate = __commonJS((exports) => {
       return;
     }
     if (!opts.jtd)
-      checkStrictTypes(it, types2);
+      checkStrictTypes(it, types);
     gen.block(() => {
       for (const group of RULES.rules)
         groupKeywords(group);
@@ -2469,7 +2469,7 @@ var require_validate = __commonJS((exports) => {
       if (group.type) {
         gen.if((0, dataType_2.checkDataType)(group.type, data, opts.strictNumbers));
         iterateKeywords(it, group);
-        if (types2.length === 1 && types2[0] === group.type && typeErrors) {
+        if (types.length === 1 && types[0] === group.type && typeErrors) {
           gen.else();
           (0, dataType_2.reportTypeError)(it);
         }
@@ -2493,27 +2493,27 @@ var require_validate = __commonJS((exports) => {
       }
     });
   }
-  function checkStrictTypes(it, types2) {
+  function checkStrictTypes(it, types) {
     if (it.schemaEnv.meta || !it.opts.strictTypes)
       return;
-    checkContextTypes(it, types2);
+    checkContextTypes(it, types);
     if (!it.opts.allowUnionTypes)
-      checkMultipleTypes(it, types2);
+      checkMultipleTypes(it, types);
     checkKeywordTypes(it, it.dataTypes);
   }
-  function checkContextTypes(it, types2) {
-    if (!types2.length)
+  function checkContextTypes(it, types) {
+    if (!types.length)
       return;
     if (!it.dataTypes.length) {
-      it.dataTypes = types2;
+      it.dataTypes = types;
       return;
     }
-    types2.forEach((t) => {
+    types.forEach((t) => {
       if (!includesType(it.dataTypes, t)) {
         strictTypesError(it, `type "${t}" not allowed by context "${it.dataTypes.join(",")}"`);
       }
     });
-    narrowSchemaTypes(it, types2);
+    narrowSchemaTypes(it, types);
   }
   function checkMultipleTypes(it, ts) {
     if (ts.length > 1 && !(ts.length === 2 && ts.includes("null"))) {
@@ -2786,9 +2786,9 @@ var require_validation_error = __commonJS((exports) => {
   Object.defineProperty(exports, "__esModule", { value: true });
 
   class ValidationError extends Error {
-    constructor(errors4) {
+    constructor(errors3) {
       super("validation failed");
-      this.errors = errors4;
+      this.errors = errors3;
       this.ajv = this.validation = true;
     }
   }
@@ -4111,10 +4111,10 @@ var require_core = __commonJS((exports) => {
       this.formats[name] = format;
       return this;
     }
-    errorsText(errors4 = this.errors, { separator = ", ", dataVar = "data" } = {}) {
-      if (!errors4 || errors4.length === 0)
+    errorsText(errors3 = this.errors, { separator = ", ", dataVar = "data" } = {}) {
+      if (!errors3 || errors3.length === 0)
         return "No errors";
-      return errors4.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text, msg) => text + separator + msg);
+      return errors3.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text, msg) => text + separator + msg);
     }
     $dataMetaSchema(metaSchema, keywordsJsonPointers) {
       const rules = this.RULES.all;
@@ -5372,13 +5372,13 @@ var require_additionalProperties = __commonJS((exports) => {
           }
         }
       }
-      function applyAdditionalSchema(key, valid, errors4) {
+      function applyAdditionalSchema(key, valid, errors3) {
         const subschema = {
           keyword: "additionalProperties",
           dataProp: key,
           dataPropType: util_1.Type.Str
         };
-        if (errors4 === false) {
+        if (errors3 === false) {
           Object.assign(subschema, {
             compositeRule: true,
             createErrors: false,
@@ -6633,7 +6633,7 @@ var require_common = __commonJS((exports, module) => {
   function setup(env) {
     createDebug.debug = createDebug;
     createDebug.default = createDebug;
-    createDebug.coerce = coerce2;
+    createDebug.coerce = coerce;
     createDebug.disable = disable;
     createDebug.enable = enable;
     createDebug.enabled = enabled;
@@ -6788,7 +6788,7 @@ var require_common = __commonJS((exports, module) => {
       }
       return false;
     }
-    function coerce2(val) {
+    function coerce(val) {
       if (val instanceof Error) {
         return val.stack || val.message;
       }
@@ -6966,14 +6966,14 @@ var require_browser = __commonJS((exports, module) => {
 // node_modules/debug/src/node.js
 var require_node = __commonJS((exports, module) => {
   var tty = __require("tty");
-  var util3 = __require("util");
+  var util2 = __require("util");
   exports.init = init;
   exports.log = log;
   exports.formatArgs = formatArgs;
   exports.save = save;
   exports.load = load;
   exports.useColors = useColors;
-  exports.destroy = util3.deprecate(() => {}, "Instance method `debug.destroy()` is deprecated and no longer does anything. It will be removed in the next major version of `debug`.");
+  exports.destroy = util2.deprecate(() => {}, "Instance method `debug.destroy()` is deprecated and no longer does anything. It will be removed in the next major version of `debug`.");
   exports.colors = [6, 2, 3, 4, 5, 1];
   try {
     const supportsColor = (()=>{throw new Error("Cannot require module "+"supports-color");})();
@@ -7101,7 +7101,7 @@ var require_node = __commonJS((exports, module) => {
     return new Date().toISOString() + " ";
   }
   function log(...args) {
-    return process.stderr.write(util3.formatWithOptions(exports.inspectOpts, ...args) + `
+    return process.stderr.write(util2.formatWithOptions(exports.inspectOpts, ...args) + `
 `);
   }
   function save(namespaces) {
@@ -7125,12 +7125,12 @@ var require_node = __commonJS((exports, module) => {
   var { formatters } = module.exports;
   formatters.o = function(v) {
     this.inspectOpts.colors = this.useColors;
-    return util3.inspect(v, this.inspectOpts).split(`
+    return util2.inspect(v, this.inspectOpts).split(`
 `).map((str) => str.trim()).join(" ");
   };
   formatters.O = function(v) {
     this.inspectOpts.colors = this.useColors;
-    return util3.inspect(v, this.inspectOpts);
+    return util2.inspect(v, this.inspectOpts);
   };
 });
 
@@ -7644,14 +7644,14 @@ var require_inherits_browser = __commonJS((exports, module) => {
 // node_modules/inherits/inherits.js
 var require_inherits = __commonJS((exports, module) => {
   try {
-    util3 = __require("util");
-    if (typeof util3.inherits !== "function")
+    util2 = __require("util");
+    if (typeof util2.inherits !== "function")
       throw "";
-    module.exports = util3.inherits;
+    module.exports = util2.inherits;
   } catch (e) {
     module.exports = require_inherits_browser();
   }
-  var util3;
+  var util2;
 });
 
 // node_modules/toidentifier/index.js
@@ -21554,7 +21554,7 @@ var require_mime_types = __commonJS((exports) => {
     }
     return exports.types[extension2] || false;
   }
-  function populateMaps(extensions, types2) {
+  function populateMaps(extensions, types) {
     Object.keys(db).forEach(function forEachMimeType(type) {
       var mime = db[type];
       var exts = mime.extensions;
@@ -21564,10 +21564,10 @@ var require_mime_types = __commonJS((exports) => {
       extensions[type] = exts;
       for (var i = 0;i < exts.length; i++) {
         var extension2 = exts[i];
-        types2[extension2] = _preferredType(extension2, types2[extension2], type);
-        const legacyType = _preferredTypeLegacy(extension2, types2[extension2], type);
-        if (legacyType !== types2[extension2]) {
-          exports._extensionConflicts.push([extension2, legacyType, types2[extension2]]);
+        types[extension2] = _preferredType(extension2, types[extension2], type);
+        const legacyType = _preferredTypeLegacy(extension2, types[extension2], type);
+        if (legacyType !== types[extension2]) {
+          exports._extensionConflicts.push([extension2, legacyType, types[extension2]]);
         }
       }
     });
@@ -21678,23 +21678,23 @@ var require_type_is = __commonJS((exports, module) => {
   module.exports.match = mimeMatch;
   function typeis(value, types_) {
     var i;
-    var types2 = types_;
+    var types = types_;
     var val = tryNormalizeType(value);
     if (!val) {
       return false;
     }
-    if (types2 && !Array.isArray(types2)) {
-      types2 = new Array(arguments.length - 1);
-      for (i = 0;i < types2.length; i++) {
-        types2[i] = arguments[i + 1];
+    if (types && !Array.isArray(types)) {
+      types = new Array(arguments.length - 1);
+      for (i = 0;i < types.length; i++) {
+        types[i] = arguments[i + 1];
       }
     }
-    if (!types2 || !types2.length) {
+    if (!types || !types.length) {
       return val;
     }
     var type;
-    for (i = 0;i < types2.length; i++) {
-      if (mimeMatch(normalize(type = types2[i]), val)) {
+    for (i = 0;i < types.length; i++) {
+      if (mimeMatch(normalize(type = types[i]), val)) {
         return type[0] === "+" || type.indexOf("*") !== -1 ? val : type;
       }
     }
@@ -21706,9 +21706,9 @@ var require_type_is = __commonJS((exports, module) => {
   function typeofrequest(req, types_) {
     if (!hasbody(req))
       return null;
-    var types2 = arguments.length > 2 ? Array.prototype.slice.call(arguments, 1) : types_;
+    var types = arguments.length > 2 ? Array.prototype.slice.call(arguments, 1) : types_;
     var value = req.headers["content-type"];
-    return typeis(value, types2);
+    return typeis(value, types);
   }
   function normalize(type) {
     if (typeof type !== "string") {
@@ -25796,8 +25796,8 @@ var require_utils4 = __commonJS((exports) => {
   exports.normalizeType = function(type) {
     return ~type.indexOf("/") ? acceptParams(type) : { value: mime.lookup(type) || "application/octet-stream", params: {} };
   };
-  exports.normalizeTypes = function(types2) {
-    return types2.map(exports.normalizeType);
+  exports.normalizeTypes = function(types) {
+    return types.map(exports.normalizeType);
   };
   function acceptParams(str) {
     var length = str.length;
@@ -26210,10 +26210,10 @@ var require_dist2 = __commonJS((exports) => {
     const keys = [];
     let source = "";
     let combinations = 0;
-    function process3(path2) {
+    function process2(path2) {
       if (Array.isArray(path2)) {
         for (const p of path2)
-          process3(p);
+          process2(p);
         return;
       }
       const data = typeof path2 === "object" ? path2 : parse6(path2, options);
@@ -26227,7 +26227,7 @@ var require_dist2 = __commonJS((exports) => {
         combinations++;
       });
     }
-    process3(path);
+    process2(path);
     let pattern = `^(?:${source})`;
     if (trailing)
       pattern += "(?:" + escape2(delimiter) + "$)?";
@@ -27829,23 +27829,23 @@ var require_accepts = __commonJS((exports, module) => {
     this.negotiator = new Negotiator(req);
   }
   Accepts.prototype.type = Accepts.prototype.types = function(types_) {
-    var types2 = types_;
-    if (types2 && !Array.isArray(types2)) {
-      types2 = new Array(arguments.length);
-      for (var i = 0;i < types2.length; i++) {
-        types2[i] = arguments[i];
+    var types = types_;
+    if (types && !Array.isArray(types)) {
+      types = new Array(arguments.length);
+      for (var i = 0;i < types.length; i++) {
+        types[i] = arguments[i];
       }
     }
-    if (!types2 || types2.length === 0) {
+    if (!types || types.length === 0) {
       return this.negotiator.mediaTypes();
     }
     if (!this.headers.accept) {
-      return types2[0];
+      return types[0];
     }
-    var mimes = types2.map(extToMime);
+    var mimes = types.map(extToMime);
     var accepts = this.negotiator.mediaTypes(mimes.filter(validMime));
     var first = accepts[0];
-    return first ? types2[mimes.indexOf(first)] : false;
+    return first ? types[mimes.indexOf(first)] : false;
   };
   Accepts.prototype.encoding = Accepts.prototype.encodings = function(encodings_) {
     var encodings = encodings_;
@@ -28117,9 +28117,9 @@ var require_request = __commonJS((exports, module) => {
     var querystring = parse6(this).query;
     return queryparse(querystring);
   });
-  req.is = function is(types2) {
-    var arr = types2;
-    if (!Array.isArray(types2)) {
+  req.is = function is(types) {
+    var arr = types;
+    if (!Array.isArray(types)) {
       arr = new Array(arguments.length);
       for (var i = 0;i < arr.length; i++) {
         arr[i] = arguments[i];
@@ -28635,7 +28635,7 @@ var require_send = __commonJS((exports, module) => {
   var path = __require("path");
   var statuses = require_statuses();
   var Stream = __require("stream");
-  var util3 = __require("util");
+  var util2 = __require("util");
   var extname = path.extname;
   var join = path.join;
   var normalize = path.normalize;
@@ -28670,7 +28670,7 @@ var require_send = __commonJS((exports, module) => {
     this._maxage = !isNaN(this._maxage) ? Math.min(Math.max(0, this._maxage), MAX_MAXAGE) : 0;
     this._root = opts.root ? resolve(opts.root) : null;
   }
-  util3.inherits(SendStream, Stream);
+  util2.inherits(SendStream, Stream);
   SendStream.prototype.error = function error2(status, err) {
     if (hasListeners(this, "error")) {
       return this.emit("error", createHttpError(status, err));
@@ -29840,118 +29840,6 @@ var require_express = __commonJS((exports, module) => {
   exports.urlencoded = bodyParser.urlencoded;
 });
 
-// node_modules/zod/v3/external.js
-var exports_external = {};
-__export(exports_external, {
-  void: () => voidType,
-  util: () => util,
-  unknown: () => unknownType,
-  union: () => unionType,
-  undefined: () => undefinedType,
-  tuple: () => tupleType,
-  transformer: () => effectsType,
-  symbol: () => symbolType,
-  string: () => stringType,
-  strictObject: () => strictObjectType,
-  setErrorMap: () => setErrorMap,
-  set: () => setType,
-  record: () => recordType,
-  quotelessJson: () => quotelessJson,
-  promise: () => promiseType,
-  preprocess: () => preprocessType,
-  pipeline: () => pipelineType,
-  ostring: () => ostring,
-  optional: () => optionalType,
-  onumber: () => onumber,
-  oboolean: () => oboolean,
-  objectUtil: () => objectUtil,
-  object: () => objectType,
-  number: () => numberType,
-  nullable: () => nullableType,
-  null: () => nullType,
-  never: () => neverType,
-  nativeEnum: () => nativeEnumType,
-  nan: () => nanType,
-  map: () => mapType,
-  makeIssue: () => makeIssue,
-  literal: () => literalType,
-  lazy: () => lazyType,
-  late: () => late,
-  isValid: () => isValid,
-  isDirty: () => isDirty,
-  isAsync: () => isAsync,
-  isAborted: () => isAborted,
-  intersection: () => intersectionType,
-  instanceof: () => instanceOfType,
-  getParsedType: () => getParsedType,
-  getErrorMap: () => getErrorMap,
-  function: () => functionType,
-  enum: () => enumType,
-  effect: () => effectsType,
-  discriminatedUnion: () => discriminatedUnionType,
-  defaultErrorMap: () => en_default,
-  datetimeRegex: () => datetimeRegex,
-  date: () => dateType,
-  custom: () => custom,
-  coerce: () => coerce,
-  boolean: () => booleanType,
-  bigint: () => bigIntType,
-  array: () => arrayType,
-  any: () => anyType,
-  addIssueToContext: () => addIssueToContext,
-  ZodVoid: () => ZodVoid,
-  ZodUnknown: () => ZodUnknown,
-  ZodUnion: () => ZodUnion,
-  ZodUndefined: () => ZodUndefined,
-  ZodType: () => ZodType,
-  ZodTuple: () => ZodTuple,
-  ZodTransformer: () => ZodEffects,
-  ZodSymbol: () => ZodSymbol,
-  ZodString: () => ZodString,
-  ZodSet: () => ZodSet,
-  ZodSchema: () => ZodType,
-  ZodRecord: () => ZodRecord,
-  ZodReadonly: () => ZodReadonly,
-  ZodPromise: () => ZodPromise,
-  ZodPipeline: () => ZodPipeline,
-  ZodParsedType: () => ZodParsedType,
-  ZodOptional: () => ZodOptional,
-  ZodObject: () => ZodObject,
-  ZodNumber: () => ZodNumber,
-  ZodNullable: () => ZodNullable,
-  ZodNull: () => ZodNull,
-  ZodNever: () => ZodNever,
-  ZodNativeEnum: () => ZodNativeEnum,
-  ZodNaN: () => ZodNaN,
-  ZodMap: () => ZodMap,
-  ZodLiteral: () => ZodLiteral,
-  ZodLazy: () => ZodLazy,
-  ZodIssueCode: () => ZodIssueCode,
-  ZodIntersection: () => ZodIntersection,
-  ZodFunction: () => ZodFunction,
-  ZodFirstPartyTypeKind: () => ZodFirstPartyTypeKind,
-  ZodError: () => ZodError,
-  ZodEnum: () => ZodEnum,
-  ZodEffects: () => ZodEffects,
-  ZodDiscriminatedUnion: () => ZodDiscriminatedUnion,
-  ZodDefault: () => ZodDefault,
-  ZodDate: () => ZodDate,
-  ZodCatch: () => ZodCatch,
-  ZodBranded: () => ZodBranded,
-  ZodBoolean: () => ZodBoolean,
-  ZodBigInt: () => ZodBigInt,
-  ZodArray: () => ZodArray,
-  ZodAny: () => ZodAny,
-  Schema: () => ZodType,
-  ParseStatus: () => ParseStatus,
-  OK: () => OK,
-  NEVER: () => NEVER,
-  INVALID: () => INVALID,
-  EMPTY_PATH: () => EMPTY_PATH,
-  DIRTY: () => DIRTY,
-  BRAND: () => BRAND
-});
-
 // node_modules/zod/v3/helpers/util.js
 var util;
 (function(util2) {
@@ -30102,11 +29990,6 @@ var ZodIssueCode = util.arrayToEnum([
   "not_multiple_of",
   "not_finite"
 ]);
-var quotelessJson = (obj) => {
-  const json = JSON.stringify(obj, null, 2);
-  return json.replace(/"([^"]+)":/g, "$1:");
-};
-
 class ZodError extends Error {
   get errors() {
     return this.issues;
@@ -30307,12 +30190,10 @@ var en_default = errorMap;
 
 // node_modules/zod/v3/errors.js
 var overrideErrorMap = en_default;
-function setErrorMap(map) {
-  overrideErrorMap = map;
-}
 function getErrorMap() {
   return overrideErrorMap;
 }
+
 // node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
   const { data, path, errorMaps, issueData } = params;
@@ -30339,7 +30220,6 @@ var makeIssue = (params) => {
     message: errorMessage
   };
 };
-var EMPTY_PATH = [];
 function addIssueToContext(ctx, issueData) {
   const overrideMap = getErrorMap();
   const issue = makeIssue({
@@ -30419,6 +30299,7 @@ var isAborted = (x) => x.status === "aborted";
 var isDirty = (x) => x.status === "dirty";
 var isValid = (x) => x.status === "valid";
 var isAsync = (x) => typeof Promise !== "undefined" && x instanceof Promise;
+
 // node_modules/zod/v3/helpers/errorUtil.js
 var errorUtil;
 (function(errorUtil2) {
@@ -33693,33 +33574,6 @@ ZodReadonly.create = (type, params) => {
     ...processCreateParams(params)
   });
 };
-function cleanParams(params, data) {
-  const p = typeof params === "function" ? params(data) : typeof params === "string" ? { message: params } : params;
-  const p2 = typeof p === "string" ? { message: p } : p;
-  return p2;
-}
-function custom(check, _params = {}, fatal) {
-  if (check)
-    return ZodAny.create().superRefine((data, ctx) => {
-      const r = check(data);
-      if (r instanceof Promise) {
-        return r.then((r2) => {
-          if (!r2) {
-            const params = cleanParams(_params, data);
-            const _fatal = params.fatal ?? fatal ?? true;
-            ctx.addIssue({ code: "custom", ...params, fatal: _fatal });
-          }
-        });
-      }
-      if (!r) {
-        const params = cleanParams(_params, data);
-        const _fatal = params.fatal ?? fatal ?? true;
-        ctx.addIssue({ code: "custom", ...params, fatal: _fatal });
-      }
-      return;
-    });
-  return ZodAny.create();
-}
 var late = {
   object: ZodObject.lazycreate
 };
@@ -33762,9 +33616,6 @@ var ZodFirstPartyTypeKind;
   ZodFirstPartyTypeKind2["ZodPipeline"] = "ZodPipeline";
   ZodFirstPartyTypeKind2["ZodReadonly"] = "ZodReadonly";
 })(ZodFirstPartyTypeKind || (ZodFirstPartyTypeKind = {}));
-var instanceOfType = (cls, params = {
-  message: `Input not instance of ${cls.name}`
-}) => custom((data) => data instanceof cls, params);
 var stringType = ZodString.create;
 var numberType = ZodNumber.create;
 var nanType = ZodNaN.create;
@@ -33799,22 +33650,9 @@ var optionalType = ZodOptional.create;
 var nullableType = ZodNullable.create;
 var preprocessType = ZodEffects.createWithPreprocess;
 var pipelineType = ZodPipeline.create;
-var ostring = () => stringType().optional();
-var onumber = () => numberType().optional();
-var oboolean = () => booleanType().optional();
-var coerce = {
-  string: (arg) => ZodString.create({ ...arg, coerce: true }),
-  number: (arg) => ZodNumber.create({ ...arg, coerce: true }),
-  boolean: (arg) => ZodBoolean.create({
-    ...arg,
-    coerce: true
-  }),
-  bigint: (arg) => ZodBigInt.create({ ...arg, coerce: true }),
-  date: (arg) => ZodDate.create({ ...arg, coerce: true })
-};
-var NEVER = INVALID;
+
 // node_modules/zod/v4/core/core.js
-var NEVER2 = Object.freeze({
+var NEVER = Object.freeze({
   status: "aborted"
 });
 function $constructor(name, initializer, params) {
@@ -37834,7 +37672,7 @@ var initializer2 = (inst, issues) => {
     }
   });
 };
-var ZodError3 = $constructor("ZodError", initializer2);
+var ZodError2 = $constructor("ZodError", initializer2);
 var ZodRealError = $constructor("ZodError", initializer2, {
   Parent: Error
 });
@@ -38421,7 +38259,7 @@ function check(fn) {
   ch._zod.check = fn;
   return ch;
 }
-function custom2(fn, _params) {
+function custom(fn, _params) {
   return _custom(ZodCustom, fn ?? (() => true), _params);
 }
 function refine(fn, _params = {}) {
@@ -38459,7 +38297,7 @@ var DEFAULT_NEGOTIATED_PROTOCOL_VERSION = "2025-03-26";
 var SUPPORTED_PROTOCOL_VERSIONS = [LATEST_PROTOCOL_VERSION, "2025-06-18", "2025-03-26", "2024-11-05", "2024-10-07"];
 var RELATED_TASK_META_KEY = "io.modelcontextprotocol/related-task";
 var JSONRPC_VERSION = "2.0";
-var AssertObjectSchema = custom2((v) => v !== null && (typeof v === "object" || typeof v === "function"));
+var AssertObjectSchema = custom((v) => v !== null && (typeof v === "object" || typeof v === "function"));
 var ProgressTokenSchema = union([string2(), number2().int()]);
 var CursorSchema = string2();
 var TaskCreationParamsSchema = looseObject({
@@ -40033,15 +39871,15 @@ function parseUnionDef(def, refs) {
     return asAnyOf(def, refs);
   const options = def.options instanceof Map ? Array.from(def.options.values()) : def.options;
   if (options.every((x) => (x._def.typeName in primitiveMappings) && (!x._def.checks || !x._def.checks.length))) {
-    const types2 = options.reduce((types3, x) => {
+    const types = options.reduce((types2, x) => {
       const type = primitiveMappings[x._def.typeName];
-      return type && !types3.includes(type) ? [...types3, type] : types3;
+      return type && !types2.includes(type) ? [...types2, type] : types2;
     }, []);
     return {
-      type: types2.length > 1 ? types2 : types2[0]
+      type: types.length > 1 ? types : types[0]
     };
   } else if (options.every((x) => x._def.typeName === "ZodLiteral" && !x.description)) {
-    const types2 = options.reduce((acc, x) => {
+    const types = options.reduce((acc, x) => {
       const type = typeof x._def.value;
       switch (type) {
         case "string":
@@ -40060,8 +39898,8 @@ function parseUnionDef(def, refs) {
           return acc;
       }
     }, []);
-    if (types2.length === options.length) {
-      const uniqueTypes = types2.filter((x, i, a) => a.indexOf(x) === i);
+    if (types.length === options.length) {
+      const uniqueTypes = types.filter((x, i, a) => a.indexOf(x) === i);
       return {
         type: uniqueTypes.length > 1 ? uniqueTypes : uniqueTypes[0],
         enum: options.reduce((acc, x) => {
@@ -41996,6 +41834,7 @@ class ExperimentalMcpServerTasks {
     return mcpServerInternal._createRegisteredTool(name, config2.title, config2.description, config2.inputSchema, config2.outputSchema, config2.annotations, execution, config2._meta, handler);
   }
 }
+
 // node_modules/@modelcontextprotocol/sdk/dist/esm/server/mcp.js
 class McpServer {
   constructor(serverInfo, options) {
@@ -42721,97 +42560,6 @@ var EMPTY_COMPLETION_RESULT = {
     hasMore: false
   }
 };
-
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
-import process2 from "process";
-
-// node_modules/@modelcontextprotocol/sdk/dist/esm/shared/stdio.js
-class ReadBuffer {
-  append(chunk) {
-    this._buffer = this._buffer ? Buffer.concat([this._buffer, chunk]) : chunk;
-  }
-  readMessage() {
-    if (!this._buffer) {
-      return null;
-    }
-    const index = this._buffer.indexOf(`
-`);
-    if (index === -1) {
-      return null;
-    }
-    const line = this._buffer.toString("utf8", 0, index).replace(/\r$/, "");
-    this._buffer = this._buffer.subarray(index + 1);
-    return deserializeMessage(line);
-  }
-  clear() {
-    this._buffer = undefined;
-  }
-}
-function deserializeMessage(line) {
-  return JSONRPCMessageSchema.parse(JSON.parse(line));
-}
-function serializeMessage(message) {
-  return JSON.stringify(message) + `
-`;
-}
-
-// node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
-class StdioServerTransport {
-  constructor(_stdin = process2.stdin, _stdout = process2.stdout) {
-    this._stdin = _stdin;
-    this._stdout = _stdout;
-    this._readBuffer = new ReadBuffer;
-    this._started = false;
-    this._ondata = (chunk) => {
-      this._readBuffer.append(chunk);
-      this.processReadBuffer();
-    };
-    this._onerror = (error2) => {
-      this.onerror?.(error2);
-    };
-  }
-  async start() {
-    if (this._started) {
-      throw new Error("StdioServerTransport already started! If using Server class, note that connect() calls start() automatically.");
-    }
-    this._started = true;
-    this._stdin.on("data", this._ondata);
-    this._stdin.on("error", this._onerror);
-  }
-  processReadBuffer() {
-    while (true) {
-      try {
-        const message = this._readBuffer.readMessage();
-        if (message === null) {
-          break;
-        }
-        this.onmessage?.(message);
-      } catch (error2) {
-        this.onerror?.(error2);
-      }
-    }
-  }
-  async close() {
-    this._stdin.off("data", this._ondata);
-    this._stdin.off("error", this._onerror);
-    const remainingDataListeners = this._stdin.listenerCount("data");
-    if (remainingDataListeners === 0) {
-      this._stdin.pause();
-    }
-    this._readBuffer.clear();
-    this.onclose?.();
-  }
-  send(message) {
-    return new Promise((resolve) => {
-      const json = serializeMessage(message);
-      if (this._stdout.write(json)) {
-        resolve();
-      } else {
-        this._stdout.once("drain", resolve);
-      }
-    });
-  }
-}
 
 // node_modules/@hono/node-server/dist/index.mjs
 import { Http2ServerRequest as Http2ServerRequest2, constants as h2constants } from "http2";
@@ -44073,188 +43821,24 @@ function createMcpExpressApp(options = {}) {
 }
 
 // src/server.ts
-import { randomUUID } from "crypto";
-
-// src/fhir-context.ts
-function extractFhirContext(headers) {
-  const fhirUrl = headers["x-fhir-server-url"];
-  if (!fhirUrl)
-    return null;
-  return {
-    fhirUrl,
-    fhirToken: headers["x-fhir-access-token"],
-    patientId: headers["x-patient-id"]
-  };
-}
-async function fetchFhir(resourceType, context, params) {
-  const url = new URL(`${context.fhirUrl}/${resourceType}`);
-  if (context.patientId && resourceType !== "Patient") {
-    url.searchParams.set("patient", context.patientId);
-  }
-  if (params) {
-    Object.entries(params).forEach(([key, val]) => url.searchParams.set(key, val));
-  }
-  const headers = {};
-  if (context.fhirToken) {
-    headers["Authorization"] = `Bearer ${context.fhirToken}`;
-  }
-  const res = await fetch(url.toString(), { headers });
-  if (!res.ok)
-    throw new Error(`FHIR request failed: ${res.status} ${res.statusText}`);
-  return res.json();
-}
-
-// src/tools/healthcare.ts
-function getPatientSummary(context) {
-  return async () => {
-    if (!context.patientId)
-      return { content: [{ type: "text", text: "No patient ID provided" }] };
-    const [patient, conditions, meds] = await Promise.all([
-      fetchFhir("Patient", context, { _id: context.patientId }),
-      fetchFhir("Condition", context, { clinicalStatus: "active" }),
-      fetchFhir("MedicationRequest", context, { status: "active" })
-    ]);
-    const patientBundle = patient;
-    const p = patientBundle.entry?.[0]?.resource;
-    const name = p?.name?.[0];
-    const fullName = `${name?.given?.join(" ") ?? ""} ${name?.family ?? ""}`.trim();
-    const dob = p?.birthDate ?? "unknown";
-    const gender = p?.gender ?? "unknown";
-    const condBundle = conditions;
-    const condList = (condBundle.entry ?? []).map((e) => e.resource.code?.text).filter(Boolean).join(", ");
-    const medBundle = meds;
-    const medList = (medBundle.entry ?? []).map((e) => e.resource.medicationCodeableConcept?.text).filter(Boolean).join(", ");
-    const summary = [
-      `Patient: ${fullName || context.patientId}`,
-      `DOB: ${dob}, Gender: ${gender}`,
-      `Active Conditions: ${condList || "None"}`,
-      `Active Medications: ${medList || "None"}`
-    ].join(`
-`);
-    return { content: [{ type: "text", text: summary }] };
-  };
-}
-function getMedications(context) {
-  return async () => {
-    const meds = await fetchFhir("MedicationRequest", context, { status: "active" });
-    const medBundle = meds;
-    const entries = medBundle.entry ?? [];
-    const list = entries.map((e) => {
-      const r = e.resource;
-      return `- ${r.medicationCodeableConcept?.text ?? r.id}: ${r.dosageInstruction?.[0]?.text ?? ""} (${r.authoredOn ?? ""})`;
-    }).join(`
-`);
-    return { content: [{ type: "text", text: list || "No active medications" }] };
-  };
-}
-function getLabResults(context) {
-  return async () => {
-    const obs = await fetchFhir("Observation", context, { category: "laboratory", _sort: "-date", _count: "20" });
-    const obsBundle = obs;
-    const entries = obsBundle.entry ?? [];
-    const list = entries.map((e) => {
-      const r = e.resource;
-      const val = r.valueQuantity ? `${r.valueQuantity.value} ${r.valueQuantity.unit ?? ""}` : "";
-      return `- ${r.code?.text ?? "Unknown"}: ${val} (${r.issued ?? ""})`;
-    }).join(`
-`);
-    return { content: [{ type: "text", text: list || "No lab results found" }] };
-  };
-}
-function getConditions(context) {
-  return async () => {
-    const conds = await fetchFhir("Condition", context);
-    const condBundle = conds;
-    const entries = condBundle.entry ?? [];
-    const list = entries.map((e) => {
-      const r = e.resource;
-      const status = r.clinicalStatus?.coding?.[0]?.code ?? "";
-      return `- ${r.code?.text ?? "Unknown"} [${status}] (${r.recordedDate ?? ""})`;
-    }).join(`
-`);
-    return { content: [{ type: "text", text: list || "No conditions found" }] };
-  };
-}
-var toolDefinitions = [
-  {
-    name: "get_patient_summary",
-    description: "Get a comprehensive summary of the current patient including demographics, active conditions, and medications",
-    inputSchema: exports_external.object({})
-  },
-  {
-    name: "get_medications",
-    description: "Get active medications for the current patient",
-    inputSchema: exports_external.object({})
-  },
-  {
-    name: "get_lab_results",
-    description: "Get recent laboratory results for the current patient",
-    inputSchema: exports_external.object({})
-  },
-  {
-    name: "get_conditions",
-    description: "Get all conditions for the current patient with clinical status",
-    inputSchema: exports_external.object({})
-  }
-];
-
-// src/server.ts
-var TRANSPORT = process.env.TRANSPORT ?? "stdio";
-var currentContext = null;
-function getServer() {
+var PORT = parseInt(process.env.PORT ?? "8080");
+var app = createMcpExpressApp();
+app.all("/mcp", async (req, res) => {
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined
+  });
   const server = new McpServer({
     name: "healthcare-mcp",
     version: "1.0.0"
   });
   server.tool("get_patient_summary", "Get patient summary", {}, async () => {
-    if (!currentContext)
-      return { content: [{ type: "text", text: "No FHIR context" }], isError: true };
-    return getPatientSummary(currentContext)();
+    return {
+      content: [{ type: "text", text: "Patient: John Doe, DOB: 1980-01-01, Conditions: Hypertension, Medications: Lisinopril" }]
+    };
   });
-  server.tool("get_medications", "Get medications", {}, async () => {
-    if (!currentContext)
-      return { content: [{ type: "text", text: "No FHIR context" }], isError: true };
-    return getMedications(currentContext)();
-  });
-  server.tool("get_lab_results", "Get lab results", {}, async () => {
-    if (!currentContext)
-      return { content: [{ type: "text", text: "No FHIR context" }], isError: true };
-    return getLabResults(currentContext)();
-  });
-  server.tool("get_conditions", "Get conditions", {}, async () => {
-    if (!currentContext)
-      return { content: [{ type: "text", text: "No FHIR context" }], isError: true };
-    return getConditions(currentContext)();
-  });
-  return server;
-}
-if (TRANSPORT === "http") {
-  const app = createMcpExpressApp();
-  app.use((req, _res, next) => {
-    const headers = req.headers;
-    currentContext = extractFhirContext(headers);
-    next();
-  });
-  const transports = new Map;
-  app.all("/mcp", async (req, res) => {
-    const sessionId = req.headers["mcp-session-id"];
-    let transport = sessionId ? transports.get(sessionId) : null;
-    if (!transport) {
-      transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => randomUUID()
-      });
-      const server = getServer();
-      await server.connect(transport);
-      transports.set(transport.sessionId, transport);
-    }
-    await transport.handleRequest(req, res, req.body);
-  });
-  const PORT = parseInt(process.env.PORT ?? "3000");
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Healthcare MCP server (HTTP) running on port ${PORT}/mcp`);
-  });
-} else {
-  const server = getServer();
-  const transport = new StdioServerTransport;
   await server.connect(transport);
-}
+  await transport.handleRequest(req, res, req.body);
+});
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Healthcare MCP server running on port ${PORT}/mcp`);
+});
