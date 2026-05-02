@@ -67,9 +67,9 @@ if (TRANSPORT === "http") {
     await transport.handleRequest(req, res, req.body)
   })
 
-  const PORT = process.env.PORT ?? 3000
-  app.listen(PORT, () => {
-    console.log(`Healthcare MCP server (HTTP) running on http://localhost:${PORT}/mcp`)
+  const PORT = parseInt(process.env.PORT ?? "3000")
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Healthcare MCP server (HTTP) running on port ${PORT}/mcp`)
   })
 } else {
   const server = getServer()
