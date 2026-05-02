@@ -10,6 +10,10 @@ app.use(express.json())
 // Store FHIR context per transport/session
 const sessionContexts = new Map<string, { fhirUrl: string, fhirToken?: string, patientId?: string }>()
 
+app.get("/", (_req, res) => {
+  res.status(200).json({ status: "ok", service: "healthcare-mcp" })
+})
+
 app.all("/mcp", async (req, res) => {
   // Extract FHIR context from SHARP-on-MCP headers
   const fhirUrl = req.headers["x-fhir-server-url"] as string
